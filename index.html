@@ -31,7 +31,7 @@
     </div>
 
     <script>
-        // Use the native a1lib object provided by the script tag above
+        // Native Alt1 library object
         const rsLib = window.a1lib;
         
         let presets = JSON.parse(localStorage.getItem("rs_preset_imgs") || "{}");
@@ -47,9 +47,11 @@
             inputContainer.appendChild(div);
         }
 
+        // The Handshake
         function initApp() {
             if (window.alt1) {
-                alt1.identifyAppUrl("appconfig.json");
+                // Force relative path to ensure it finds the JSON
+                alt1.identifyAppUrl("./appconfig.json");
                 isRunning = true;
                 document.getElementById("init-btn").style.display = "none";
                 document.getElementById("status").innerText = "Searching for Bank...";
@@ -75,9 +77,9 @@
             reader.readAsDataURL(file);
         };
 
+        // The Engine
         function startScanning() {
             setInterval(() => {
-                // Check if Alt1 exists and if we have pixel permissions
                 if (!isRunning || !window.alt1 || !alt1.permissionPixel) return;
 
                 let img = rsLib.captureHoldFull();
