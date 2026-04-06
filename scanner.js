@@ -32,10 +32,11 @@ function toggleSettings() {
     document.getElementById("settings-menu").style.display = showSettings ? "block" : "none";
 }
 
-// 3. The Safe Pixel Reader
+// 3. Safe Pixel Reader
 function getPixelColor(x, y) {
     try {
         let color = a1lib.getPixel(x, y);
+        if (!color) return null;
         return { r: color[0], g: color[1], b: color[2] };
     } catch(e) { return null; }
 }
@@ -45,20 +46,20 @@ window.onload = function() {
     if (window.alt1) {
         document.getElementById("install-screen").style.display = "none";
         document.getElementById("app-controls").style.display = "block";
-        document.getElementById("status").innerText = savedAnchor ? "Ready! Open Bank." : "Please Calibrate.";
+        document.getElementById("status").innerText = savedAnchor ? "Ready!" : "Please Calibrate.";
         startScanning();
     } else {
         document.getElementById("install-screen").style.display = "block";
     }
 };
 
-// 5. Calibrate
+// 5. Calibrate (Hover exactly on the center of the Gold Cog)
 function startCalibration() {
     if (isCalibrating) return;
     isCalibrating = true;
     let count = 3;
     let countdown = setInterval(() => {
-        document.getElementById("status").innerText = `Hover over Cog... (${count})`;
+        document.getElementById("status").innerText = `Hover Cog... (${count})`;
         if (count-- <= 0) {
             clearInterval(countdown);
             let pos = a1lib.mousePosition();
@@ -79,32 +80,32 @@ function startScanning() {
         
         let p = getPixelColor(savedAnchor.x, savedAnchor.y);
         
-        // Check if Cog is present (Gold/Brown)
-        if (p && p.r > 100 && p.g > 70) {
+        // TRANSPARENCY-PROOF LOGIC:
+        // Instead of a fixed number, we check if Red is the dominant color.
+        // Gold always has significantly more Red/Green than Blue.
+        if (p && p.r > p.b + 40 && p.g > p.b + 20) {
             document.getElementById("status").innerText = "Bank Active";
             
-            let pageP = getPixelColor(savedAnchor.x - 85, savedAnchor.y + 5);
-            let offset = (pageP && pageP.r > 160) ? 10 : 1;
+            // Check Page (The 'Next' arrow is to the left of the Cog)
+            let pageP = getPixelColor(savedAnchor.x - 25, savedAnchor.y);
+            let isPageTwo = (pageP && pageP.r > pageP.b + 50); 
+            let offset = isPageTwo ? 10 : 1;
             
-            // CRASH FIX: The "Safe Clear" method
-            try {
-                alt1.overloadOut(""); 
-            } catch(e) {
-                // If the above still fails, we do nothing and let the images overwrite
-            }
+            try { alt1.overloadOut(""); } catch(e) {}
 
-            for (let i = 0; i < 9; i++) {
+            for (let i = 0; i < 10; i++) {
                 let idx = offset + i;
                 if (presets[idx]) {
-                    let posX = savedAnchor.x - 238 + ((i % 5) * 40);
-                    let posY = savedAnchor.y - 41 + (Math.floor(i / 5) * 40);
+                    let col = i % 5;
+                    let row = Math.floor(i / 5);
                     
-                    // Safe Draw
+                    // Specific math for your 2x5 Preset grid layout
+                    let posX = savedAnchor.x - 170 + (col * 34.5);
+                    let posY = savedAnchor.y - 65 + (row * 31.5);
+                    
                     try {
-                        alt1.overloadImg(presets[idx], posX, posY, 30, 30);
-                    } catch(e) {
-                        console.error("Draw failed:", e);
-                    }
+                        alt1.overloadImg(presets[idx], Math.floor(posX), Math.floor(posY), 24, 24);
+                    } catch(e) {}
                 }
             }
         } else {
