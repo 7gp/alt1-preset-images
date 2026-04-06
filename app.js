@@ -44,7 +44,6 @@ function toggleSettings() {
 
 // 3. The Boot Sequence
 window.onload = function() {
-    // Check if we are running inside Alt1 and have permissions
     if (window.alt1 && alt1.permissionPixel) {
         document.getElementById("install-screen").style.display = "none";
         document.getElementById("app-controls").style.display = "block";
@@ -77,8 +76,7 @@ function startCalibration() {
             clearInterval(countdown);
             
             try {
-                // FIXED: Using a1lib instead of raw alt1 object
-                let pos = a1lib.mousePosition(); 
+                let pos = alt1.mousePosition();
                 if (pos) {
                     savedAnchor = { x: pos.x, y: pos.y };
                     localStorage.setItem("rs_bank_anchor", JSON.stringify(savedAnchor));
@@ -101,25 +99,35 @@ function startCalibration() {
     }, 1000);
 }
 
-// 5. The Overlay Engine
+// 5. Ultra-Fast Native Pixel Reader Helper
+function getPixelColor(x, y) {
+    let colorInt = alt1.getPixel(x, y);
+    if (colorInt === -1) return null; // Off-screen or blocked
+    return {
+        r: (colorInt >> 16) & 255,
+        g: (colorInt >> 8) & 255,
+        b: colorInt & 255
+    };
+}
+
+// 6. The Overlay Engine
 function startScanning() {
     setInterval(() => {
         if (isCalibrating || !window.alt1 || !alt1.permissionPixel || !savedAnchor) return;
 
-        // FIXED: Using a1lib for image capture
-        let img = a1lib.captureHoldFull();
-        if (!img) return;
+        // Directly read the 1 pixel where the cog is
+        let checkPix = getPixelColor(savedAnchor.x, savedAnchor.y);
         
-        let checkPix = img.getPixel(savedAnchor.x, savedAnchor.y);
-        
-        if (checkPix.r > 130 && checkPix.g > 100) {
+        // If it returns a Gold/Brownish-Gold color
+        if (checkPix && checkPix.r > 130 && checkPix.g > 100) {
             document.getElementById("status").innerText = "Bank Active";
 
-            let pagePix = img.getPixel(savedAnchor.x - 85, savedAnchor.y + 5);
-            let isPageTwo = (pagePix.r > 180); 
+            // Directly read the 1 pixel where the page number is
+            let pagePix = getPixelColor(savedAnchor.x - 85, savedAnchor.y + 5);
+            let isPageTwo = (pagePix && pagePix.r > 180); 
             let offset = isPageTwo ? 10 : 1;
 
-            alt1.overloadOut(); 
+            alt1.overloadOut(); // Clear previous frames
 
             for (let i = 0; i < 9; i++) {
                 let pIdx = offset + i;
