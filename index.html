@@ -1,66 +1,78 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Preset Overlays</title>
-    <meta name="alt1config" content="appconfig.json">
+    <title>Presetify</title>
+    <link rel="icon" href="./images/icon.png" type="image/png">
+    <link rel="stylesheet" href="./styles/default/index.css">
     <script src="https://runeapps.org/alt1lib.js"></script>
+    
     <style>
-        body { background: #1a1a1a; color: #ccc; font-family: sans-serif; margin: 0; padding: 15px; text-align: center; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 10px; }
-        .cog-btn { cursor: pointer; color: #dbab09; font-size: 30px; user-select: none; }
-        #settings-menu { display: none; background: #222; padding: 15px; border-radius: 5px; height: 300px; overflow-y: auto; border: 1px solid #444; text-align: left; }
-        .upload-row { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 8px; align-items: center; }
-        .btn-main { background: #dbab09; color: black; border: none; padding: 12px; width: 100%; cursor: pointer; font-weight: bold; border-radius: 4px; margin-bottom: 10px; }
-        .status { font-size: 11px; color: #888; font-style: italic; }
+        #settings-menu { display: none; background: rgba(20, 20, 20, 0.95); padding: 15px; border-radius: 5px; height: 320px; overflow-y: auto; border: 1px solid #444; position: absolute; top: 40px; left: 10px; right: 10px; z-index: 100; }
+        .upload-row { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 8px; align-items: center; color: #ccc; }
+        .btn-ui { background: #dbab09; color: black; border: none; padding: 8px; cursor: pointer; font-weight: bold; border-radius: 4px; width: 100%; margin-top: 5px; }
+        .status-text { color: #dbab09; font-weight: bold; margin-top: 10px; text-align: center; }
     </style>
 </head>
-<body>
-
-    <div class="header">
-        <strong>Preset Overlays</strong>
-        <div class="cog-btn" onclick="toggleSettings()">⚙️</div>
+<body id="nis" class="nis">
+    
+    <div id="menubutton" class="transbutton" title="Settings" onclick="toggleSettings()" style="cursor: pointer; position: absolute; top: 5px; right: 5px; font-size: 20px;">⚙️</div>
+    
+    <div id="addtoalt1" class="nistext">
+        Must be installed in Alt1 Toolkit<br>
+        <a href="#" onclick="window.open('https://runeapps.org/alt1');">Download Here</a> or
+        <a href="#" onclick="window.open('alt1://addapp/https://presetify.unlishema.org/appconfig.json');">Add App</a>
+        to Alt1
     </div>
+    
+    <div id="header" class="nistext" style="text-align: center; font-size: 18px; margin-bottom: 10px;">Presetify</div>
 
-    <button id="init-btn" class="btn-main" onclick="initApp()">Start App & Grant Permissions</button>
-    <div id="status" class="status">App Loaded. Click Start.</div>
+    <div id="app-controls" style="display: none; padding: 10px;">
+        <button id="cal-btn" class="btn-ui" style="background: #444; color: white;" onclick="startCalibration()">📌 Calibrate Bank Position</button>
+        <div id="status" class="status-text">App Loaded.</div>
+    </div>
 
     <div id="settings-menu">
         <h3 style="margin-top:0; color:#dbab09;">Icon Manager</h3>
         <div id="inputs"></div>
-        <button class="btn-main" onclick="toggleSettings()">Close Settings</button>
+        <button class="btn-ui" onclick="toggleSettings()">Close Settings</button>
     </div>
 
     <script>
-        // Native Alt1 library object
         const rsLib = window.a1lib;
-        
         let presets = JSON.parse(localStorage.getItem("rs_preset_imgs") || "{}");
+        let savedAnchor = JSON.parse(localStorage.getItem("rs_bank_anchor") || "null");
         let showSettings = false;
-        let isRunning = false;
+        let isCalibrating = false;
 
-        // Populate 18 slots
+        // 1. Populate the 18 Upload Slots
         const inputContainer = document.getElementById("inputs");
         for (let i = 1; i <= 18; i++) {
             let div = document.createElement("div");
             div.className = "upload-row";
-            div.innerHTML = `<span>#${i}:</span> <input type="file" accept="image/*" onchange="saveImg(${i}, this)">`;
+            div.innerHTML = `<span>Preset #${i}:</span> <input type="file" accept="image/*" onchange="saveImg(${i}, this)" style="width: 140px; font-size: 11px;">`;
             inputContainer.appendChild(div);
         }
 
-        // The Handshake
-        function initApp() {
+        // 2. The Smart Boot Sequence
+        window.onload = function() {
             if (window.alt1) {
-                // Force relative path to ensure it finds the JSON
-                alt1.identifyAppUrl("./appconfig.json");
-                isRunning = true;
-                document.getElementById("init-btn").style.display = "none";
-                document.getElementById("status").innerText = "Searching for Bank...";
+                // We are inside Alt1! Hide the install links and show the app.
+                document.getElementById("addtoalt1").style.display = "none";
+                document.getElementById("app-controls").style.display = "block";
+                
+                if (savedAnchor) {
+                    document.getElementById("status").innerText = "Ready! Open your bank.";
+                } else {
+                    document.getElementById("status").innerText = "Click Calibrate to begin.";
+                }
                 startScanning();
             } else {
-                alert("Please open this inside the Alt1 Toolkit browser.");
+                // We are in Chrome/Firefox. Show the install links.
+                document.getElementById("app-controls").style.display = "none";
             }
-        }
+        };
 
+        // 3. UI Toggles
         window.toggleSettings = function() {
             showSettings = !showSettings;
             document.getElementById("settings-menu").style.display = showSettings ? "block" : "none";
@@ -72,27 +84,55 @@
             reader.onload = (e) => {
                 presets[num] = e.target.result;
                 localStorage.setItem("rs_preset_imgs", JSON.stringify(presets));
-                alert("Preset " + num + " Icon Saved!");
             };
             reader.readAsDataURL(file);
         };
 
-        // The Engine
+        // 4. The 3-Second Calibration
+        window.startCalibration = function() {
+            if (isCalibrating || !window.alt1) return;
+            isCalibrating = true;
+            
+            let count = 3;
+            document.getElementById("status").innerText = `Hover over the Gold Cog! (${count}s...)`;
+            
+            let countdown = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    document.getElementById("status").innerText = `Hover over the Gold Cog! (${count}s...)`;
+                } else {
+                    clearInterval(countdown);
+                    let pos = alt1.mousePosition();
+                    if (pos) {
+                        savedAnchor = { x: pos.x, y: pos.y };
+                        localStorage.setItem("rs_bank_anchor", JSON.stringify(savedAnchor));
+                        document.getElementById("status").innerText = "Calibration Saved!";
+                    } else {
+                        document.getElementById("status").innerText = "Calibration Failed. Try again.";
+                    }
+                    isCalibrating = false;
+                    setTimeout(() => { 
+                        if(savedAnchor) document.getElementById("status").innerText = "Scanning for Bank..."; 
+                    }, 2000);
+                }
+            }, 1000);
+        };
+
+        // 5. The Scanner Engine
         function startScanning() {
             setInterval(() => {
-                if (!isRunning || !window.alt1 || !alt1.permissionPixel) return;
+                if (isCalibrating || !window.alt1 || !alt1.permissionPixel || !savedAnchor) return;
 
                 let img = rsLib.captureHoldFull();
                 if (!img) return;
                 
-                // Scan for the Gold Cog (#dbab09)
-                let cog = img.findColor([219, 171, 9], 20);
-
-                if (cog.length > 0) {
+                let checkPix = img.getPixel(savedAnchor.x, savedAnchor.y);
+                
+                // If the pixel is Gold/Brownish-Gold
+                if (checkPix.r > 130 && checkPix.g > 100) {
                     document.getElementById("status").innerText = "Bank Active";
-                    let anchor = cog[0];
 
-                    let pagePix = img.getPixel(anchor.x - 85, anchor.y + 5);
+                    let pagePix = img.getPixel(savedAnchor.x - 85, savedAnchor.y + 5);
                     let isPageTwo = (pagePix.r > 180); 
                     let offset = isPageTwo ? 10 : 1;
 
@@ -103,14 +143,14 @@
                         if (presets[pIdx]) {
                             let col = i % 5;
                             let row = Math.floor(i / 5);
-                            let x = anchor.x - 238 + (col * 40);
-                            let y = anchor.y - 41 + (row * 40);
+                            let x = savedAnchor.x - 238 + (col * 40);
+                            let y = savedAnchor.y - 41 + (row * 40);
                             
                             alt1.overloadImg(presets[pIdx], x, y, 30, 30);
                         }
                     }
                 } else {
-                    document.getElementById("status").innerText = "Searching for Bank...";
+                    document.getElementById("status").innerText = "Bank Closed/Moved.";
                     alt1.overloadOut();
                 }
             }, 400);
