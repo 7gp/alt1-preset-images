@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>Preset overlays by 7xQuest</title>
-    <meta name="alt1config" content="https://osrs.us/alt1-preset-images/appconfig.json?v=3">
+    <meta name="alt1config" content="https://osrs.us/alt1-preset-images/appconfig.json">
     <link rel="stylesheet" href="./styles/default/index.css">
     <script src="https://runeapps.org/alt1lib.js"></script>
     
@@ -36,7 +36,7 @@
     <div id="install-screen">
         <h3 style="color: #ff4444; margin-top: 0;">Installation Required</h3>
         <p style="font-size: 12px; color: #ccc;">This app must be installed in Alt1 to read your screen and draw icons.</p>
-        <a href="alt1://addapp/https://osrs.us/alt1-preset-images/appconfig.json?v=3" class="install-link">Click Here to Install App</a>
+        <a href="alt1://addapp/https://osrs.us/alt1-preset-images/appconfig.json" class="install-link">Click Here to Install App</a>
     </div>
 
     <div id="app-controls">
@@ -57,7 +57,6 @@
         let showSettings = false;
         let isCalibrating = false;
 
-        // 1. Build the Upload Menu
         const inputContainer = document.getElementById("inputs");
         for (let i = 1; i <= 18; i++) {
             let div = document.createElement("div");
@@ -66,10 +65,8 @@
             inputContainer.appendChild(div);
         }
 
-        // 2. The Boot Sequence - Strict Permission Check
         window.onload = function() {
             if (window.alt1 && alt1.permissionPixel) {
-                // Everything is installed and permissions are granted
                 document.getElementById("install-screen").style.display = "none";
                 document.getElementById("app-controls").style.display = "block";
                 
@@ -80,7 +77,6 @@
                 }
                 startScanning();
             } else {
-                // Either not in Alt1, or in Alt1 but not installed/no permissions
                 document.getElementById("install-screen").style.display = "block";
                 document.getElementById("app-controls").style.display = "none";
             }
@@ -101,7 +97,6 @@
             reader.readAsDataURL(file);
         };
 
-        // 3. Crash-Proof Calibration
         window.startCalibration = function() {
             if (isCalibrating || !window.alt1) return;
             isCalibrating = true;
@@ -140,7 +135,6 @@
             }, 1000);
         };
 
-        // 4. The Overlay Engine
         function startScanning() {
             setInterval(() => {
                 if (isCalibrating || !window.alt1 || !alt1.permissionPixel || !savedAnchor) return;
