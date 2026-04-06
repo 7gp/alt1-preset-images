@@ -1,33 +1,196 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Preset Icons</title>
+    <title>Preset Overlays</title>
     <script src="https://runeapps.org/alt1lib.js"></script>
     <style>
-        body { background: #222; color: #ccc; font-family: sans-serif; margin: 0; padding: 5px; font-size: 12px; border: 1px solid #444; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 5px; }
-        #settings-menu { display: none; padding-top: 10px; max-height: 400px; overflow-y: auto; }
-        .upload-row { display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center; border-bottom: 1px solid #333; padding-bottom: 4px; }
-        .cog-btn { cursor: pointer; color: #dbab09; font-size: 18px; transition: 0.2s; }
-        .cog-btn:hover { color: #fff; }
-        input[type="file"] { width: 120px; font-size: 10px; color: #888; }
-        .status { font-size: 10px; color: #555; margin-top: 5px; }
+        body { 
+            background: #1a1a1a; 
+            color: #e0e0e0; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 12px; 
+            font-size: 13px; 
+            height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Top Navigation */
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 2px solid #333; 
+            padding-bottom: 10px; 
+            margin-bottom: 15px; 
+        }
+        
+        .title { font-weight: bold; color: #fff; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* The Settings Cog - Made Large and Clickable */
+        .cog-btn { 
+            cursor: pointer; 
+            color: #dbab09; 
+            font-size: 24px; 
+            padding: 5px;
+            line-height: 1;
+            transition: transform 0.2s;
+            display: block;
+            -webkit-user-select: none;
+        }
+        .cog-btn:hover { transform: rotate(45deg); color: #fff; }
+
+        /* Status Text */
+        #status-text { font-size: 11px; color: #888; font-style: italic; margin-bottom: 10px; }
+
+        /* Settings Menu */
+        #settings-menu { 
+            display: none; 
+            background: #2a2a2a; 
+            padding: 15px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border: 1px solid #444;
+            margin-top: 10px;
+        }
+        
+        .upload-row { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 10px; 
+            align-items: center; 
+            border-bottom: 1px solid #3a3a3a; 
+            padding-bottom: 6px; 
+        }
+        
+        input[type="file"] { width: 130px; font-size: 10px; color: #aaa; }
+        
+        .btn {
+            background: #dbab09;
+            color: #000;
+            border: none;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .btn:hover { background: #fff; }
     </style>
 </head>
 <body>
+
     <div class="header">
-        <span>Preset Overlays</span>
-        <div class="cog-btn" onclick="toggleSettings()">⚙️</div>
+        <span class="title">Preset Overlays</span>
+        <div class="cog-btn" id="cog-trigger">⚙️</div>
     </div>
+
+    <div id="status-text">Initializing...</div>
+    
+    <button class="btn" onclick="requestPerms()" id="perm-btn">Request Alt1 Permissions</button>
 
     <div id="settings-menu">
-        <strong>Upload 30x30 Icons</strong>
+        <strong style="display:block; margin-bottom:10px; color:#dbab09;">Upload 30x30 Icons</strong>
         <div id="inputs"></div>
-        <button onclick="toggleSettings()" style="width:100%; margin-top:10px;">Close Settings</button>
+        <button class="btn" onclick="toggleSettings()">Save & Close</button>
     </div>
-    
-    <div id="status-text" class="status">Searching for Bank...</div>
 
-    <script src="app.js"></script>
+    <script>
+        const a1lib = new Alt1lib();
+        let presets = JSON.parse(localStorage.getItem("rs_preset_imgs") || "{}");
+        let showSettings = false;
+
+        // 1. Setup UI elements
+        const inputContainer = document.getElementById("inputs");
+        for (let i = 1; i <= 18; i++) {
+            let div = document.createElement("div");
+            div.className = "upload-row";
+            div.innerHTML = `<span>Preset ${i}:</span> <input type="file" accept="image/*" onchange="saveImg(${i}, this)">`;
+            inputContainer.appendChild(div);
+        }
+
+        // 2. Direct Toggle Function
+        function toggleSettings() {
+            showSettings = !showSettings;
+            const menu = document.getElementById("settings-menu");
+            menu.style.display = showSettings ? "block" : "none";
+            console.log("Settings toggled to: " + showSettings);
+        }
+
+        // Add event listener directly to the cog to ensure it fires
+        document.getElementById("cog-trigger").addEventListener("click", toggleSettings);
+
+        // 3. Permission Request
+        function requestPerms() {
+            if (window.alt1) {
+                alt1.events.listen("permissionpixel", (e) => {
+                    console.log("Pixel permission granted!");
+                    document.getElementById("perm-btn").style.display = "none";
+                });
+                // This triggers the prompt
+                a1lib.identifyAppUrl("appconfig"); 
+            }
+        }
+
+        // 4. Save Image to Local Storage
+        function saveImg(num, input) {
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                presets[num] = e.target.result;
+                localStorage.setItem("rs_preset_imgs", JSON.stringify(presets));
+                alert("Preset " + num + " updated!");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 5. Detection Engine
+        function scan() {
+            if (!window.alt1 || !alt1.permissionPixel) {
+                document.getElementById("status-text").innerText = "Waiting for Pixel Permissions...";
+                return;
+            }
+
+            let img = a1lib.captureHoldFull();
+            
+            // Search for the Gold Cog color #dbab09
+            let cog = img.findColor([219, 171, 9], 15); 
+
+            if (cog.length > 0) {
+                document.getElementById("status-text").innerText = "Bank Detected!";
+                let anchor = cog[0];
+
+                // Page Detection: Check for pixel at offset for "18" text
+                let pagePixel = img.getPixel(anchor.x - 85, anchor.y + 5);
+                let isPage2 = (pagePixel.r > 180 && pagePixel.g > 180); 
+                let startIdx = isPage2 ? 10 : 1;
+
+                // Clear overlays and draw new frame
+                alt1.overloadOut(); 
+                
+                for (let i = 0; i < 9; i++) {
+                    let pNum = startIdx + i;
+                    if (presets[pNum]) {
+                        let row = Math.floor(i / 5);
+                        let col = i % 5;
+                        
+                        // Offset math: Standard preset buttons relative to Cog
+                        let x = anchor.x - 238 + (col * 40); 
+                        let y = anchor.y - 41 + (row * 40);
+                        
+                        alt1.overloadImg(presets[pNum], x, y, 30, 30);
+                    }
+                }
+            } else {
+                document.getElementById("status-text").innerText = "Searching for Preset Menu...";
+                alt1.overloadOut();
+            }
+        }
+
+        // Start scanning every 400ms
+        setInterval(scan, 400);
+
+    </script>
 </body>
 </html>
