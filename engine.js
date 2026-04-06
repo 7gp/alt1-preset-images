@@ -60,7 +60,7 @@ window.onload = function() {
     }
 };
 
-// 4. Calibration
+// 4. Calibration logic using a1lib
 function startCalibration() {
     if (isCalibrating || !window.alt1) return;
     isCalibrating = true;
@@ -76,8 +76,8 @@ function startCalibration() {
             clearInterval(countdown);
             
             try {
-                // Use a1lib wrapper for mouse position
-                let pos = a1lib.mousePosition();
+                // Library call: a1lib.mousePosition()
+                let pos = a1lib.mousePosition(); 
                 if (pos) {
                     savedAnchor = { x: pos.x, y: pos.y };
                     localStorage.setItem("rs_bank_anchor", JSON.stringify(savedAnchor));
@@ -100,10 +100,10 @@ function startCalibration() {
     }, 1000);
 }
 
-// 5. Native Pixel Reader Helper (a1lib wrapper)
+// 5. Pixel Reader Helper using a1lib
 function getPixelColor(x, y) {
     try {
-        // Use a1lib wrapper for getPixel
+        // Library call: a1lib.getPixel(x, y) returns [r, g, b, a]
         let color = a1lib.getPixel(x, y);
         if (!color) return null;
         
@@ -124,7 +124,7 @@ function startScanning() {
 
         let checkPix = getPixelColor(savedAnchor.x, savedAnchor.y);
         
-        // Match for the gold bank cog
+        // Checking for the gold/brown bank cog color
         if (checkPix && checkPix.r > 100 && checkPix.g > 70) {
             document.getElementById("status").innerText = "Bank Active";
 
