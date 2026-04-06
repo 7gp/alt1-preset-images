@@ -5,26 +5,30 @@
     <script src="https://runeapps.org/alt1lib.js"></script>
     <style>
         body { background: #1a1a1a; color: #ccc; font-family: sans-serif; margin: 0; padding: 15px; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 10px; }
-        .cog-btn { cursor: pointer; color: #dbab09; font-size: 24px; user-select: none; }
-        #settings-menu { display: none; margin-top: 20px; background: #222; padding: 10px; border-radius: 5px; height: 300px; overflow-y: auto; }
-        .upload-row { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        .status { font-size: 11px; color: #888; margin-top: 10px; }
-        .install-btn { background: #dbab09; color: black; border: none; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #444; padding-bottom: 10px; }
+        /* The Settings Cog - Large hit-box */
+        .cog-btn { cursor: pointer; color: #dbab09; font-size: 30px; padding: 10px; user-select: none; z-index: 100; }
+        #settings-menu { display: none; margin-top: 10px; background: #222; padding: 15px; border-radius: 5px; height: 350px; overflow-y: auto; border: 1px solid #444; }
+        .upload-row { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 8px; align-items: center; }
+        input[type="file"] { width: 140px; font-size: 11px; }
+        .status { font-size: 11px; color: #888; margin-top: 10px; font-style: italic; }
+        .btn-ui { background: #333; color: #dbab09; border: 1px solid #dbab09; padding: 5px 10px; cursor: pointer; border-radius: 3px; font-size: 11px; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <strong>Preset Overlays</strong>
+        <button class="btn-ui" onclick="toggleSettings()">Open Settings</button>
         <div class="cog-btn" onclick="toggleSettings()">⚙️</div>
     </div>
 
-    <button class="install-btn" onclick="installApp()">Click to Finalize Install</button>
-    <div id="status" class="status">Waiting for Bank...</div>
+    <div id="status" class="status">Initializing Search...</div>
 
     <div id="settings-menu">
+        <h3 style="margin-top:0; color:#dbab09;">Icon Manager</h3>
         <div id="inputs"></div>
+        <button class="btn-ui" style="width:100%; margin-top:15px;" onclick="toggleSettings()">Save and Close</button>
     </div>
 
     <script>
@@ -41,55 +45,49 @@
             inputContainer.appendChild(div);
         }
 
-        function toggleSettings() {
+        // Use window scope to ensure the button can see the function
+        window.toggleSettings = function() {
             showSettings = !showSettings;
             document.getElementById("settings-menu").style.display = showSettings ? "block" : "none";
-        }
+        };
 
-        function installApp() {
-            if (window.alt1) {
-                alt1.identifyAppUrl("appconfig.json");
-            } else {
-                alert("Please open this inside the Alt1 Toolkit browser.");
-            }
-        }
-
-        function saveImg(num, input) {
+        window.saveImg = function(num, input) {
             const file = input.files[0];
             const reader = new FileReader();
             reader.onload = (e) => {
                 presets[num] = e.target.result;
                 localStorage.setItem("rs_preset_imgs", JSON.stringify(presets));
-                alert("Preset " + num + " Saved!");
+                alert("Preset " + num + " Icon Loaded!");
             };
             reader.readAsDataURL(file);
-        }
+        };
 
         function mainLoop() {
-            if (!window.alt1 || !alt1.permissionPixel) return;
+            if (!window.alt1 || !alt1.permissionPixel) {
+                document.getElementById("status").innerText = "Waiting for Alt1 permissions...";
+                return;
+            }
 
-            // Capture only the screen area (Performance optimized)
             let img = a1lib.captureHoldFull();
             
-            // 1. Search for the Cog Color #dbab09
-            let cog = img.findColor([219, 171, 9]);
+            // Search for the Cog Color #dbab09 with 15% tolerance
+            let cog = img.findColor([219, 171, 9], 15);
 
             if (cog.length > 0) {
-                document.getElementById("status").innerText = "Bank Detected - Overlaying...";
+                document.getElementById("status").innerText = "Bank Active - Drawing Overlays";
                 let anchor = cog[0];
 
-                // 2. Page Check: Look for pixel at specific offset where "10" or "1" text appears
-                // We check if the pixel is 'white' (text color)
+                // Page Detection: Check if Preset 1 or 10 is shown
+                // Pixel check at offset (-85, +5) from Cog
                 let pagePix = img.getPixel(anchor.x - 85, anchor.y + 5);
-                let isPageTwo = (pagePix.r > 200); 
+                let isPageTwo = (pagePix.r > 180); // White text check
                 let offset = isPageTwo ? 10 : 1;
 
-                alt1.overloadOut(); // Wipe existing frame
+                alt1.overloadOut(); 
 
                 for (let i = 0; i < 9; i++) {
                     let pIdx = offset + i;
                     if (presets[pIdx]) {
-                        // Math for the 2-row Preset Grid
                         let col = i % 5;
                         let row = Math.floor(i / 5);
                         let x = anchor.x - 238 + (col * 40);
@@ -99,12 +97,13 @@
                     }
                 }
             } else {
-                document.getElementById("status").innerText = "Searching for Preset Menu...";
+                document.getElementById("status").innerText = "Bank Not Found. Open Presets Tab.";
                 alt1.overloadOut();
             }
         }
 
-        setInterval(mainLoop, 500);
+        // Faster update for better 'snapping'
+        setInterval(mainLoop, 300);
     </script>
 </body>
 </html>
