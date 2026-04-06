@@ -1,14 +1,10 @@
 {
-	"name": "Preset Overlays",
-	"version": "1.0.0",
-	"description": "Custom 30x30 icons for RS3 bank presets.",
-	"category": "Utility",
-	"icons": [
-		{ "width": 64, "url": "icon64.png" }
-	],
-	"main": "index.html",
-	"permissions": [
-		"pixel",
-		"overlay"
-	]
+  "name": "Preset Overlays",
+  "version": "1.0.0",
+  "description": "Custom icons for RS3 presets.",
+  "main": "index.html",
+  "permissions": [
+    "pixel",
+    "overlay"
+  ]
 }
