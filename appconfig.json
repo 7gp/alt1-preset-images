@@ -1,8 +1,8 @@
 {
   "appName": "Preset overlays by 7xQuest",
   "description": "Custom icons for RS3 presets.",
-  "appUrl": "https://osrs.us/alt1-preset-images/index.html",
-  "configUrl": "https://osrs.us/alt1-preset-images/appconfig.json",
+  "appUrl": "./index.html",
+  "configUrl": "./appconfig.json",
   "defaultWidth": 400,
   "defaultHeight": 500,
   "permissions": "pixel,overlay"
