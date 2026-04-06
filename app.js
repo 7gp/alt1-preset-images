@@ -44,6 +44,7 @@ function toggleSettings() {
 
 // 3. The Boot Sequence
 window.onload = function() {
+    // Check if we are running inside Alt1 and have permissions
     if (window.alt1 && alt1.permissionPixel) {
         document.getElementById("install-screen").style.display = "none";
         document.getElementById("app-controls").style.display = "block";
@@ -76,7 +77,8 @@ function startCalibration() {
             clearInterval(countdown);
             
             try {
-                let pos = alt1.mousePosition();
+                // FIXED: Using a1lib instead of raw alt1 object
+                let pos = a1lib.mousePosition(); 
                 if (pos) {
                     savedAnchor = { x: pos.x, y: pos.y };
                     localStorage.setItem("rs_bank_anchor", JSON.stringify(savedAnchor));
@@ -85,8 +87,8 @@ function startCalibration() {
                     document.getElementById("status").innerText = "Error: Could not read mouse.";
                 }
             } catch (error) {
-                document.getElementById("status").innerText = "Fatal Error: Missing Permissions.";
-                document.getElementById("install-screen").style.display = "block";
+                console.error(error);
+                document.getElementById("status").innerText = "Fatal Error: Mouse tracking failed.";
             }
             
             isCalibrating = false;
@@ -104,8 +106,8 @@ function startScanning() {
     setInterval(() => {
         if (isCalibrating || !window.alt1 || !alt1.permissionPixel || !savedAnchor) return;
 
-        // Use the native Alt1 API for capturing 
-        let img = alt1.captureHoldFull();
+        // FIXED: Using a1lib for image capture
+        let img = a1lib.captureHoldFull();
         if (!img) return;
         
         let checkPix = img.getPixel(savedAnchor.x, savedAnchor.y);
