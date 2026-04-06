@@ -44,6 +44,7 @@ function toggleSettings() {
 
 // 3. The Boot Sequence
 window.onload = function() {
+    // Check for a1lib (Legacy) permissions
     if (window.alt1 && alt1.permissionPixel) {
         document.getElementById("install-screen").style.display = "none";
         document.getElementById("app-controls").style.display = "block";
@@ -76,7 +77,8 @@ function startCalibration() {
             clearInterval(countdown);
             
             try {
-                let pos = alt1.mousePosition();
+                // Using the Legacy a1lib helper for mouse position
+                let pos = a1lib.mousePosition();
                 if (pos) {
                     savedAnchor = { x: pos.x, y: pos.y };
                     localStorage.setItem("rs_bank_anchor", JSON.stringify(savedAnchor));
@@ -99,15 +101,22 @@ function startCalibration() {
     }, 1000);
 }
 
-// 5. Ultra-Fast Native Pixel Reader Helper
+// 5. Native Pixel Reader Helper (Corrected for Legacy Lib)
 function getPixelColor(x, y) {
-    let colorInt = alt1.getPixel(x, y);
-    if (colorInt === -1) return null; // Off-screen or blocked
-    return {
-        r: (colorInt >> 16) & 255,
-        g: (colorInt >> 8) & 255,
-        b: colorInt & 255
-    };
+    // Use the raw alt1 object for getPixel (standard Alt1 API)
+    // Most Alt1 versions expect the raw alt1.getPixel call
+    try {
+        let colorInt = alt1.getPixel(x, y);
+        if (colorInt === -1) return null; 
+        return {
+            r: (colorInt >> 16) & 255,
+            g: (colorInt >> 8) & 255,
+            b: colorInt & 255
+        };
+    } catch(e) {
+        // Fallback for some Alt1 versions that wrap it in a1lib
+        return a1lib.getPixel(x, y);
+    }
 }
 
 // 6. The Overlay Engine
@@ -115,25 +124,25 @@ function startScanning() {
     setInterval(() => {
         if (isCalibrating || !window.alt1 || !alt1.permissionPixel || !savedAnchor) return;
 
-        // Directly read the 1 pixel where the cog is
         let checkPix = getPixelColor(savedAnchor.x, savedAnchor.y);
         
-        // If it returns a Gold/Brownish-Gold color
-        if (checkPix && checkPix.r > 130 && checkPix.g > 100) {
+        // If the pixel exists and has enough Red/Green to be Gold/Brown
+        if (checkPix && checkPix.r > 120 && checkPix.g > 90) {
             document.getElementById("status").innerText = "Bank Active";
 
-            // Directly read the 1 pixel where the page number is
+            // Check page 1 vs 10
             let pagePix = getPixelColor(savedAnchor.x - 85, savedAnchor.y + 5);
             let isPageTwo = (pagePix && pagePix.r > 180); 
             let offset = isPageTwo ? 10 : 1;
 
-            alt1.overloadOut(); // Clear previous frames
+            alt1.overloadOut(); 
 
             for (let i = 0; i < 9; i++) {
                 let pIdx = offset + i;
                 if (presets[pIdx]) {
                     let col = i % 5;
                     let row = Math.floor(i / 5);
+                    // Placement Math relative to the calibrated Cog
                     let x = savedAnchor.x - 238 + (col * 40);
                     let y = savedAnchor.y - 41 + (row * 40);
                     
