@@ -83,12 +83,15 @@ function startScanning() {
         if (p && p.r > 100 && p.g > 70) {
             document.getElementById("status").innerText = "Bank Active";
             
-            // Check Page (Page 2 usually has a brighter red/white indicator)
             let pageP = getPixelColor(savedAnchor.x - 85, savedAnchor.y + 5);
             let offset = (pageP && pageP.r > 160) ? 10 : 1;
             
-            // Safe Clear: Using alt1.overloadOut property directly
-            if (alt1.overloadOut) { alt1.overloadOut(""); }
+            // CRASH FIX: The "Safe Clear" method
+            try {
+                alt1.overloadOut(""); 
+            } catch(e) {
+                // If the above still fails, we do nothing and let the images overwrite
+            }
 
             for (let i = 0; i < 9; i++) {
                 let idx = offset + i;
@@ -97,12 +100,16 @@ function startScanning() {
                     let posY = savedAnchor.y - 41 + (Math.floor(i / 5) * 40);
                     
                     // Safe Draw
-                    alt1.overloadImg(presets[idx], posX, posY, 30, 30);
+                    try {
+                        alt1.overloadImg(presets[idx], posX, posY, 30, 30);
+                    } catch(e) {
+                        console.error("Draw failed:", e);
+                    }
                 }
             }
         } else {
             document.getElementById("status").innerText = "Bank Closed.";
-            if (alt1.overloadOut) { alt1.overloadOut(""); }
+            try { alt1.overloadOut(""); } catch(e) {}
         }
     }, 400);
 }
