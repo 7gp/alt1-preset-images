@@ -44,7 +44,6 @@ function toggleSettings() {
 
 // 3. The Boot Sequence
 window.onload = function() {
-    // Standard Alt1 check
     if (window.alt1) {
         document.getElementById("install-screen").style.display = "none";
         document.getElementById("app-controls").style.display = "block";
@@ -77,9 +76,9 @@ function startCalibration() {
             clearInterval(countdown);
             
             try {
-                // Using the absolute safest way to get mouse pos in Alt1
-                let pos = window.alt1.mousePosition;
-                if (pos) {
+                // Property access - NOT a function call
+                let pos = alt1.mousePosition; 
+                if (pos && pos.x !== undefined) {
                     savedAnchor = { x: pos.x, y: pos.y };
                     localStorage.setItem("rs_bank_anchor", JSON.stringify(savedAnchor));
                     document.getElementById("status").innerText = "Calibration Saved!";
@@ -101,12 +100,11 @@ function startCalibration() {
     }, 1000);
 }
 
-// 5. Native Pixel Reader Helper (Corrected for Bridge Syntax)
+// 5. Native Pixel Reader Helper (Property Access)
 function getPixelColor(x, y) {
     try {
-        // In the bridge, getPixel is often a direct property, not a function
-        // We use the direct Alt1 bridge call which returns a 32-bit integer
-        let colorInt = window.alt1.getPixel(x, y);
+        // Property access - NOT a function call
+        let colorInt = alt1.getPixel(x, y); 
         if (colorInt === -1) return null; 
         
         return {
@@ -115,7 +113,6 @@ function getPixelColor(x, y) {
             b: colorInt & 255
         };
     } catch(e) {
-        console.error("Pixel Read Fail:", e);
         return null;
     }
 }
@@ -127,16 +124,15 @@ function startScanning() {
 
         let checkPix = getPixelColor(savedAnchor.x, savedAnchor.y);
         
-        // Broadened the color range to catch the gold cog even with transparency
-        if (checkPix && checkPix.r > 110 && checkPix.g > 80) {
+        // Broad color match for the gold/brown bank cog
+        if (checkPix && checkPix.r > 100 && checkPix.g > 70) {
             document.getElementById("status").innerText = "Bank Active";
 
-            // Check page color
             let pagePix = getPixelColor(savedAnchor.x - 85, savedAnchor.y + 5);
-            let isPageTwo = (pagePix && pagePix.r > 170); 
+            let isPageTwo = (pagePix && pagePix.r > 160); 
             let offset = isPageTwo ? 10 : 1;
 
-            window.alt1.overloadOut(); 
+            alt1.overloadOut(); 
 
             for (let i = 0; i < 9; i++) {
                 let pIdx = offset + i;
@@ -146,12 +142,12 @@ function startScanning() {
                     let x = savedAnchor.x - 238 + (col * 40);
                     let y = savedAnchor.y - 41 + (row * 40);
                     
-                    window.alt1.overloadImg(presets[pIdx], x, y, 30, 30);
+                    alt1.overloadImg(presets[pIdx], x, y, 30, 30);
                 }
             }
         } else {
             document.getElementById("status").innerText = "Bank Closed/Moved.";
-            window.alt1.overloadOut();
+            alt1.overloadOut();
         }
-    }, 500); // 500ms for stability
+    }, 400); 
 }
