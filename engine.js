@@ -44,6 +44,7 @@ function toggleSettings() {
 
 // 3. The Boot Sequence
 window.onload = function() {
+    // Check for the Alt1 bridge
     if (window.alt1) {
         document.getElementById("install-screen").style.display = "none";
         document.getElementById("app-controls").style.display = "block";
@@ -60,7 +61,7 @@ window.onload = function() {
     }
 };
 
-// 4. Calibration logic using a1lib
+// 4. Calibration logic using a1lib helper
 function startCalibration() {
     if (isCalibrating || !window.alt1) return;
     isCalibrating = true;
@@ -76,7 +77,7 @@ function startCalibration() {
             clearInterval(countdown);
             
             try {
-                // Library call: a1lib.mousePosition()
+                // Correct Library call: a1lib.mousePosition()
                 let pos = a1lib.mousePosition(); 
                 if (pos) {
                     savedAnchor = { x: pos.x, y: pos.y };
@@ -100,10 +101,11 @@ function startCalibration() {
     }, 1000);
 }
 
-// 5. Pixel Reader Helper using a1lib
+// 5. Pixel Reader Helper using a1lib helper
 function getPixelColor(x, y) {
     try {
-        // Library call: a1lib.getPixel(x, y) returns [r, g, b, a]
+        // Correct Library call: a1lib.getPixel(x, y) 
+        // This returns an array [r, g, b, a]
         let color = a1lib.getPixel(x, y);
         if (!color) return null;
         
