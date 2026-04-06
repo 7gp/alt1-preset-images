@@ -44,8 +44,8 @@ function toggleSettings() {
 
 // 3. The Boot Sequence
 window.onload = function() {
-    // Check for a1lib (Legacy) permissions
-    if (window.alt1 && alt1.permissionPixel) {
+    // Standard Alt1 check
+    if (window.alt1) {
         document.getElementById("install-screen").style.display = "none";
         document.getElementById("app-controls").style.display = "block";
         
@@ -77,17 +77,17 @@ function startCalibration() {
             clearInterval(countdown);
             
             try {
-                // Using the Legacy a1lib helper for mouse position
-                let pos = a1lib.mousePosition();
+                // Using the absolute safest way to get mouse pos in Alt1
+                let pos = window.alt1.mousePosition;
                 if (pos) {
                     savedAnchor = { x: pos.x, y: pos.y };
                     localStorage.setItem("rs_bank_anchor", JSON.stringify(savedAnchor));
                     document.getElementById("status").innerText = "Calibration Saved!";
                 } else {
-                    document.getElementById("status").innerText = "Error: Could not read mouse.";
+                    document.getElementById("status").innerText = "Error: Use Alt1 to calibrate.";
                 }
             } catch (error) {
-                console.error(error);
+                console.error("Mouse Error:", error);
                 document.getElementById("status").innerText = "Fatal Error: Mouse tracking failed.";
             }
             
@@ -101,57 +101,57 @@ function startCalibration() {
     }, 1000);
 }
 
-// 5. Native Pixel Reader Helper (Corrected for Legacy Lib)
+// 5. Native Pixel Reader Helper (Corrected for Bridge Syntax)
 function getPixelColor(x, y) {
-    // Use the raw alt1 object for getPixel (standard Alt1 API)
-    // Most Alt1 versions expect the raw alt1.getPixel call
     try {
-        let colorInt = alt1.getPixel(x, y);
+        // In the bridge, getPixel is often a direct property, not a function
+        // We use the direct Alt1 bridge call which returns a 32-bit integer
+        let colorInt = window.alt1.getPixel(x, y);
         if (colorInt === -1) return null; 
+        
         return {
             r: (colorInt >> 16) & 255,
             g: (colorInt >> 8) & 255,
             b: colorInt & 255
         };
     } catch(e) {
-        // Fallback for some Alt1 versions that wrap it in a1lib
-        return a1lib.getPixel(x, y);
+        console.error("Pixel Read Fail:", e);
+        return null;
     }
 }
 
 // 6. The Overlay Engine
 function startScanning() {
     setInterval(() => {
-        if (isCalibrating || !window.alt1 || !alt1.permissionPixel || !savedAnchor) return;
+        if (isCalibrating || !window.alt1 || !savedAnchor) return;
 
         let checkPix = getPixelColor(savedAnchor.x, savedAnchor.y);
         
-        // If the pixel exists and has enough Red/Green to be Gold/Brown
-        if (checkPix && checkPix.r > 120 && checkPix.g > 90) {
+        // Broadened the color range to catch the gold cog even with transparency
+        if (checkPix && checkPix.r > 110 && checkPix.g > 80) {
             document.getElementById("status").innerText = "Bank Active";
 
-            // Check page 1 vs 10
+            // Check page color
             let pagePix = getPixelColor(savedAnchor.x - 85, savedAnchor.y + 5);
-            let isPageTwo = (pagePix && pagePix.r > 180); 
+            let isPageTwo = (pagePix && pagePix.r > 170); 
             let offset = isPageTwo ? 10 : 1;
 
-            alt1.overloadOut(); 
+            window.alt1.overloadOut(); 
 
             for (let i = 0; i < 9; i++) {
                 let pIdx = offset + i;
                 if (presets[pIdx]) {
                     let col = i % 5;
                     let row = Math.floor(i / 5);
-                    // Placement Math relative to the calibrated Cog
                     let x = savedAnchor.x - 238 + (col * 40);
                     let y = savedAnchor.y - 41 + (row * 40);
                     
-                    alt1.overloadImg(presets[pIdx], x, y, 30, 30);
+                    window.alt1.overloadImg(presets[pIdx], x, y, 30, 30);
                 }
             }
         } else {
             document.getElementById("status").innerText = "Bank Closed/Moved.";
-            alt1.overloadOut();
+            window.alt1.overloadOut();
         }
-    }, 400);
+    }, 500); // 500ms for stability
 }
