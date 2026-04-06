@@ -2,35 +2,29 @@
 <html>
 <head>
     <title>Preset overlays by 7xQuest</title>
-    <meta name="alt1config" content="https://osrs.us/alt1-preset-images/appconfig.json">
-    <link rel="stylesheet" href="./styles/default/index.css">
-    <script src="https://runeapps.org/alt1lib.js"></script>
+    <meta name="alt1config" content="./appconfig.json">
+    
+    <script src="https://www.unpkg.com/alt1/dist/base/index.js"></script>
     
     <style>
         body { background-color: #1a1a1a; color: #ccc; font-family: sans-serif; margin: 0; padding: 15px; text-align: center; }
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 10px; }
         .cog-btn { cursor: pointer; color: #dbab09; font-size: 24px; user-select: none; }
-        
-        /* Installation Screen Styles */
         #install-screen { display: none; padding: 20px; background: #2a0000; border: 1px solid #ff4444; border-radius: 5px; margin-top: 20px; }
         .install-link { display: inline-block; background: #dbab09; color: black; padding: 10px 15px; text-decoration: none; font-weight: bold; border-radius: 4px; margin-top: 15px; }
-        
-        /* Main App Styles */
         #app-controls { display: none; padding: 10px; }
         .btn-ui { background: #444; color: white; border: 1px solid #666; padding: 10px; cursor: pointer; font-weight: bold; border-radius: 4px; width: 100%; margin-top: 5px; }
         .btn-ui:hover { background: #555; }
         .status-text { color: #dbab09; font-weight: bold; margin-top: 10px; text-align: center; }
-        
-        /* Settings Menu */
         #settings-menu { display: none; background: #222; padding: 15px; border-radius: 5px; height: 320px; overflow-y: auto; border: 1px solid #444; text-align: left; margin-top: 10px;}
         .upload-row { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 8px; align-items: center; color: #ccc; font-size: 12px; }
     </style>
 </head>
-<body id="nis" class="nis" style="background-color: #1a1a1a; color: #ccc;">
+<body>
     
     <div class="header" id="header">
         <strong style="font-size: 16px;">Preset overlays by 7xQuest</strong>
-        <div class="cog-btn" title="Settings" onclick="toggleSettings()">⚙️</div>
+        <div class="cog-btn" title="Settings" id="settings-btn">⚙️</div>
     </div>
 
     <div id="install-screen">
@@ -40,136 +34,16 @@
     </div>
 
     <div id="app-controls">
-        <button id="cal-btn" class="btn-ui" onclick="startCalibration()">📌 Calibrate Bank Position</button>
+        <button id="cal-btn" class="btn-ui">📌 Calibrate Bank Position</button>
         <div id="status" class="status-text">Checking permissions...</div>
     </div>
 
     <div id="settings-menu">
         <h3 style="margin-top:0; color:#dbab09;">Upload 30x30 Icons</h3>
         <div id="inputs"></div>
-        <button class="btn-ui" style="background:#dbab09; color:black; border:none;" onclick="toggleSettings()">Save & Close</button>
+        <button class="btn-ui" style="background:#dbab09; color:black; border:none;" id="close-settings-btn">Save & Close</button>
     </div>
 
-    <script>
-        const rsLib = window.a1lib;
-        let presets = JSON.parse(localStorage.getItem("rs_preset_imgs") || "{}");
-        let savedAnchor = JSON.parse(localStorage.getItem("rs_bank_anchor") || "null");
-        let showSettings = false;
-        let isCalibrating = false;
-
-        const inputContainer = document.getElementById("inputs");
-        for (let i = 1; i <= 18; i++) {
-            let div = document.createElement("div");
-            div.className = "upload-row";
-            div.innerHTML = `<span>Preset #${i}:</span> <input type="file" accept="image/*" onchange="saveImg(${i}, this)" style="width: 140px;">`;
-            inputContainer.appendChild(div);
-        }
-
-        window.onload = function() {
-            if (window.alt1 && alt1.permissionPixel) {
-                document.getElementById("install-screen").style.display = "none";
-                document.getElementById("app-controls").style.display = "block";
-                
-                if (savedAnchor) {
-                    document.getElementById("status").innerText = "Ready! Open your bank.";
-                } else {
-                    document.getElementById("status").innerText = "Click Calibrate to begin.";
-                }
-                startScanning();
-            } else {
-                document.getElementById("install-screen").style.display = "block";
-                document.getElementById("app-controls").style.display = "none";
-            }
-        };
-
-        window.toggleSettings = function() {
-            showSettings = !showSettings;
-            document.getElementById("settings-menu").style.display = showSettings ? "block" : "none";
-        };
-
-        window.saveImg = function(num, input) {
-            const file = input.files[0];
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                presets[num] = e.target.result;
-                localStorage.setItem("rs_preset_imgs", JSON.stringify(presets));
-            };
-            reader.readAsDataURL(file);
-        };
-
-        window.startCalibration = function() {
-            if (isCalibrating || !window.alt1) return;
-            isCalibrating = true;
-            
-            let count = 3;
-            document.getElementById("status").innerText = `Hover over the Gold Cog! (${count}s...)`;
-            
-            let countdown = setInterval(() => {
-                count--;
-                if (count > 0) {
-                    document.getElementById("status").innerText = `Hover over the Gold Cog! (${count}s...)`;
-                } else {
-                    clearInterval(countdown);
-                    
-                    try {
-                        let pos = alt1.mousePosition();
-                        if (pos) {
-                            savedAnchor = { x: pos.x, y: pos.y };
-                            localStorage.setItem("rs_bank_anchor", JSON.stringify(savedAnchor));
-                            document.getElementById("status").innerText = "Calibration Saved!";
-                        } else {
-                            document.getElementById("status").innerText = "Error: Could not read mouse.";
-                        }
-                    } catch (error) {
-                        document.getElementById("status").innerText = "Fatal Error: Missing Permissions.";
-                        document.getElementById("install-screen").style.display = "block";
-                    }
-                    
-                    isCalibrating = false;
-                    setTimeout(() => { 
-                        if(savedAnchor && document.getElementById("status").innerText === "Calibration Saved!") {
-                            document.getElementById("status").innerText = "Scanning for Bank..."; 
-                        }
-                    }, 2000);
-                }
-            }, 1000);
-        };
-
-        function startScanning() {
-            setInterval(() => {
-                if (isCalibrating || !window.alt1 || !alt1.permissionPixel || !savedAnchor) return;
-
-                let img = rsLib.captureHoldFull();
-                if (!img) return;
-                
-                let checkPix = img.getPixel(savedAnchor.x, savedAnchor.y);
-                
-                if (checkPix.r > 130 && checkPix.g > 100) {
-                    document.getElementById("status").innerText = "Bank Active";
-
-                    let pagePix = img.getPixel(savedAnchor.x - 85, savedAnchor.y + 5);
-                    let isPageTwo = (pagePix.r > 180); 
-                    let offset = isPageTwo ? 10 : 1;
-
-                    alt1.overloadOut(); 
-
-                    for (let i = 0; i < 9; i++) {
-                        let pIdx = offset + i;
-                        if (presets[pIdx]) {
-                            let col = i % 5;
-                            let row = Math.floor(i / 5);
-                            let x = savedAnchor.x - 238 + (col * 40);
-                            let y = savedAnchor.y - 41 + (row * 40);
-                            
-                            alt1.overloadImg(presets[pIdx], x, y, 30, 30);
-                        }
-                    }
-                } else {
-                    document.getElementById("status").innerText = "Bank Closed/Moved.";
-                    alt1.overloadOut();
-                }
-            }, 400);
-        }
-    </script>
+    <script src="./app.js"></script>
 </body>
 </html>
