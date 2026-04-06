@@ -35,14 +35,8 @@ function toggleSettings() {
 // 3. The Safe Pixel Reader
 function getPixelColor(x, y) {
     try {
-        let color;
-        if (window.a1lib && typeof a1lib.getPixel === "function") {
-            color = a1lib.getPixel(x, y);
-            return { r: color[0], g: color[1], b: color[2] };
-        } else {
-            let colorInt = alt1.getPixel(x, y);
-            return { r: (colorInt >> 16) & 255, g: (colorInt >> 8) & 255, b: colorInt & 255 };
-        }
+        let color = a1lib.getPixel(x, y);
+        return { r: color[0], g: color[1], b: color[2] };
     } catch(e) { return null; }
 }
 
@@ -64,10 +58,10 @@ function startCalibration() {
     isCalibrating = true;
     let count = 3;
     let countdown = setInterval(() => {
-        document.getElementById("status").innerText = `Hover over Cog... (${count}s)`;
+        document.getElementById("status").innerText = `Hover over Cog... (${count})`;
         if (count-- <= 0) {
             clearInterval(countdown);
-            let pos = (window.a1lib) ? a1lib.mousePosition() : alt1.mousePosition;
+            let pos = a1lib.mousePosition();
             if (pos) {
                 savedAnchor = { x: pos.x, y: pos.y };
                 localStorage.setItem("rs_bank_anchor", JSON.stringify(savedAnchor));
@@ -81,24 +75,34 @@ function startCalibration() {
 // 6. Engine
 function startScanning() {
     setInterval(() => {
-        if (isCalibrating || !savedAnchor) return;
+        if (isCalibrating || !savedAnchor || !window.alt1) return;
+        
         let p = getPixelColor(savedAnchor.x, savedAnchor.y);
+        
+        // Check if Cog is present (Gold/Brown)
         if (p && p.r > 100 && p.g > 70) {
             document.getElementById("status").innerText = "Bank Active";
+            
+            // Check Page (Page 2 usually has a brighter red/white indicator)
             let pageP = getPixelColor(savedAnchor.x - 85, savedAnchor.y + 5);
             let offset = (pageP && pageP.r > 160) ? 10 : 1;
-            alt1.overloadOut();
+            
+            // Safe Clear: Using alt1.overloadOut property directly
+            if (alt1.overloadOut) { alt1.overloadOut(""); }
+
             for (let i = 0; i < 9; i++) {
                 let idx = offset + i;
                 if (presets[idx]) {
-                    let x = savedAnchor.x - 238 + ((i % 5) * 40);
-                    let y = savedAnchor.y - 41 + (Math.floor(i / 5) * 40);
-                    alt1.overloadImg(presets[idx], x, y, 30, 30);
+                    let posX = savedAnchor.x - 238 + ((i % 5) * 40);
+                    let posY = savedAnchor.y - 41 + (Math.floor(i / 5) * 40);
+                    
+                    // Safe Draw
+                    alt1.overloadImg(presets[idx], posX, posY, 30, 30);
                 }
             }
         } else {
             document.getElementById("status").innerText = "Bank Closed.";
-            alt1.overloadOut();
+            if (alt1.overloadOut) { alt1.overloadOut(""); }
         }
     }, 400);
 }
