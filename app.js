@@ -2,71 +2,78 @@ const a1lib = new Alt1lib();
 let presets = JSON.parse(localStorage.getItem("rs_preset_imgs") || "{}");
 let showSettings = false;
 
-// Generate 18 upload slots
+// --- UI SETUP ---
 const inputContainer = document.getElementById("inputs");
 for (let i = 1; i <= 18; i++) {
     let div = document.createElement("div");
     div.className = "upload-row";
-    div.innerHTML = `<span>Preset ${i}:</span> <input type="file" accept="image/*" onchange="saveImg(${i}, this)">`;
+    div.innerHTML = `<span>#${i}:</span> <input type="file" accept="image/*" onchange="saveImg(${i}, this)">`;
     inputContainer.appendChild(div);
 }
 
-function toggleSettings() {
+// Fixed Toggle Function
+window.toggleSettings = function() {
     showSettings = !showSettings;
-    document.getElementById("settings-menu").style.display = showSettings ? "block" : "none";
-}
+    const menu = document.getElementById("settings-menu");
+    menu.style.display = showSettings ? "block" : "none";
+    console.log("Settings toggled:", showSettings);
+};
 
-function saveImg(num, input) {
+window.saveImg = function(num, input) {
     const file = input.files[0];
     const reader = new FileReader();
     reader.onload = (e) => {
         presets[num] = e.target.result;
         localStorage.setItem("rs_preset_imgs", JSON.stringify(presets));
+        console.log(`Saved image for preset ${num}`);
     };
     reader.readAsDataURL(file);
-}
+};
 
-// MAIN LOOP
+// --- DETECTION ENGINE ---
 function main() {
     if (!window.alt1 || !alt1.permissionPixel) {
-        document.getElementById("status-text").innerText = "Waiting for Alt1 permissions...";
         return;
     }
 
     let img = a1lib.captureHoldFull();
     
-    // 1. Find the Yellow Cog (Anchor)
-    // We search for the specific Hex Color of the Cog to "lock on"
-    let cog = img.findColor([219, 171, 9]); 
+    // Find the Gold Cog color (#dbab09)
+    // We use a wider tolerance (dist: 20) to handle different scaling/filters
+    let cog = img.findColor([219, 171, 9], 20); 
 
     if (cog.length > 0) {
-        document.getElementById("status-text").innerText = "Bank Found - Overlay Active";
-        let anchorX = cog[0].x;
-        let anchorY = cog[0].y;
+        // To prevent false positives, we look for the "goldest" pixel in the cluster
+        let anchor = cog[0];
+        document.getElementById("status-text").innerText = "Bank Found!";
 
-        // 2. Check if we are on Page 2 (Look for the "18" in the bottom right button)
-        // We look for white pixels in the area where the '1' of '18' would be
-        let isPage2 = img.getPixel(anchorX - 85, anchorY + 5).r > 200; 
+        // Check for Page 2
+        // Look at the bottom-right button text area
+        let pagePixel = img.getPixel(anchor.x - 85, anchor.y + 5);
+        let isPage2 = (pagePixel.r > 180 && pagePixel.g > 180); 
         let startIdx = isPage2 ? 10 : 1;
 
-        // 3. Draw Overlays
-        alt1.overloadOut(); // Clear previous frame
+        // Clear and Draw
+        alt1.overloadOut(); 
         for (let i = 0; i < 9; i++) {
             let pNum = startIdx + i;
             if (presets[pNum]) {
-                // Layout math: 5 buttons top row, 4 buttons bottom row
+                // Layout math for the 2-row preset grid
                 let row = Math.floor(i / 5);
                 let col = i % 5;
-                let x = anchorX - 238 + (col * 40); 
-                let y = anchorY - 40 + (row * 40);
+                
+                // Based on your screenshot, the first button is ~240px left of the cog
+                let x = anchor.x - 238 + (col * 40); 
+                let y = anchor.y - 40 + (row * 40);
                 
                 alt1.overloadImg(presets[pNum], x, y, 30, 30);
             }
         }
     } else {
-        document.getElementById("status-text").innerText = "Searching for Bank...";
+        document.getElementById("status-text").innerText = "Searching for Bank (Open your bank and go to Presets tab)...";
         alt1.overloadOut();
     }
 }
 
-setInterval(main, 300);
+// Start the loop
+setInterval(main, 400);
