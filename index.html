@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Preset Overlays</title>
+    <title>Preset overlays by 7xQuest</title>
     <meta name="alt1config" content="https://osrs.us/alt1-preset-images/appconfig.json">
     <link rel="stylesheet" href="./styles/default/index.css">
     <script src="https://runeapps.org/alt1lib.js"></script>
@@ -29,7 +29,7 @@
 <body id="nis" class="nis">
     
     <div class="header" id="header">
-        <strong style="font-size: 16px;">Preset Overlays</strong>
+        <strong style="font-size: 16px;">Preset overlays by 7xQuest</strong>
         <div class="cog-btn" title="Settings" onclick="toggleSettings()">⚙️</div>
     </div>
 
@@ -126,7 +126,6 @@
                             document.getElementById("status").innerText = "Error: Could not read mouse.";
                         }
                     } catch (error) {
-                        // This catches the error that was causing your timer to freeze at 1
                         document.getElementById("status").innerText = "Fatal Error: Missing Permissions.";
                         document.getElementById("install-screen").style.display = "block";
                     }
