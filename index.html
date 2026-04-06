@@ -7,7 +7,7 @@
     <style>
         body { background: #1a1a1a; color: #ccc; font-family: sans-serif; margin: 0; padding: 15px; text-align: center; }
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 10px; }
-        .cog-btn { cursor: pointer; color: #dbab09; font-size: 30px; }
+        .cog-btn { cursor: pointer; color: #dbab09; font-size: 30px; user-select: none; }
         #settings-menu { display: none; background: #222; padding: 15px; border-radius: 5px; height: 300px; overflow-y: auto; border: 1px solid #444; text-align: left; }
         .upload-row { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 8px; align-items: center; }
         .btn-main { background: #dbab09; color: black; border: none; padding: 12px; width: 100%; cursor: pointer; font-weight: bold; border-radius: 4px; margin-bottom: 10px; }
@@ -31,8 +31,8 @@
     </div>
 
     <script>
-        // The script src already provides the global a1lib object.
-        // We do NOT instantiate it.
+        // Use the native a1lib object provided by the script tag above
+        const rsLib = window.a1lib;
         
         let presets = JSON.parse(localStorage.getItem("rs_preset_imgs") || "{}");
         let showSettings = false;
@@ -77,9 +77,11 @@
 
         function startScanning() {
             setInterval(() => {
-                if (!isRunning || !alt1.permissionPixel) return;
+                // Check if Alt1 exists and if we have pixel permissions
+                if (!isRunning || !window.alt1 || !alt1.permissionPixel) return;
 
-                let img = a1lib.captureHoldFull();
+                let img = rsLib.captureHoldFull();
+                if (!img) return;
                 
                 // Scan for the Gold Cog (#dbab09)
                 let cog = img.findColor([219, 171, 9], 20);
