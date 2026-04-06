@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Preset Icons</title>
+    <script src="https://runeapps.org/alt1lib.js"></script>
+    <style>
+        body { background: #222; color: #ccc; font-family: sans-serif; margin: 0; padding: 5px; font-size: 12px; border: 1px solid #444; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        #settings-menu { display: none; padding-top: 10px; max-height: 400px; overflow-y: auto; }
+        .upload-row { display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center; border-bottom: 1px solid #333; padding-bottom: 4px; }
+        .cog-btn { cursor: pointer; color: #dbab09; font-size: 18px; transition: 0.2s; }
+        .cog-btn:hover { color: #fff; }
+        input[type="file"] { width: 120px; font-size: 10px; color: #888; }
+        .status { font-size: 10px; color: #555; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span>Preset Overlays</span>
+        <div class="cog-btn" onclick="toggleSettings()">⚙️</div>
+    </div>
+
+    <div id="settings-menu">
+        <strong>Upload 30x30 Icons</strong>
+        <div id="inputs"></div>
+        <button onclick="toggleSettings()" style="width:100%; margin-top:10px;">Close Settings</button>
+    </div>
+    
+    <div id="status-text" class="status">Searching for Bank...</div>
+
+    <script src="app.js"></script>
+</body>
+</html>
